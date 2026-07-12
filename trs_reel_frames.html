@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+TRS REEL FRAME TEMPLATE v1 — "THE MOMENT IN MOTION" (Jul 11)
+Repo: trs_reel_frames. Fetched with cb=Date.now() — auto cache-bust, no version bookkeeping.
+1080×1920. ONE template, SIX scene modes — body class .mode-<SCENE_MODE> shows exactly one
+section per render. The Build Reel Frames node injects ALL placeholders on every frame
+(empty string when N/A) and renders each frame via HCTI; Shotstack stitches frames to video.
+Modes: hook | stakes | spine | stat | star | verdict
+Spine frames: SPINE_DOTS_HTML positions dots by minute%% (code-computed), SPINE_CHIP_HTML is
+the active goal's scorer chip, HT tick position code-computed. Running score per state.
+Star fallback: STAR_MODE class 'no-photo' switches face → winner crest + ADVANCE line.
+Render: viewport 1080×1920, ms_delay 400.
+-->
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;margin:0}
+#reel-frame{width:1080px;height:1920px;position:relative;overflow:hidden;background:#0a0a0a;font-family:'Inter',sans-serif}
+
+/* ── Team-color atmosphere (family language) ── */
+.home-zone{position:absolute;inset:0;background:{{HOME_COLOR}};opacity:0.32;clip-path:polygon(0 0,100% 0,40% 100%,0 100%)}
+.away-zone{position:absolute;inset:0;background:{{AWAY_COLOR}};opacity:0.24;clip-path:polygon(100% 0,100% 100%,40% 100%)}
+.darken{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.70) 0%,rgba(0,0,0,0.42) 40%,rgba(0,0,0,0.48) 60%,rgba(0,0,0,0.82) 100%)}
+.grain{position:absolute;inset:0;z-index:50;pointer-events:none;opacity:0.4;mix-blend-mode:overlay}
+
+/* ── Chrome ── */
+.topbar{position:absolute;top:70px;left:64px;right:64px;z-index:20;display:flex;justify-content:space-between;align-items:center}
+.brand{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:8px;color:#AAFF00}
+.badge{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:5px;color:rgba(255,255,255,0.4)}
+.botbar{position:absolute;bottom:80px;left:0;right:0;z-index:20;text-align:center}
+.decoded{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:9px;color:rgba(170,255,0,0.8)}
+
+/* ── Sections: hidden unless mode matches ── */
+.sec{display:none;position:absolute;inset:0;z-index:10}
+.mode-hook .sec-hook,.mode-stakes .sec-stakes,.mode-spine .sec-spine,
+.mode-stat .sec-stat,.mode-star .sec-star,.mode-verdict .sec-verdict{display:flex}
+
+/* ── HOOK: crest duel ── */
+.sec-hook{flex-direction:column;align-items:center;justify-content:center;gap:44px}
+.hook-crests{display:flex;align-items:center;gap:70px}
+.hook-crest{width:300px;height:300px;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(0,0,0,0.7))}
+.hook-vs{font-family:'Bebas Neue',sans-serif;font-size:110px;color:#AAFF00;line-height:1}
+.hook-codes{display:flex;align-items:center;gap:210px}
+.hook-code{font-family:'Bebas Neue',sans-serif;font-size:88px;letter-spacing:6px;color:#fff}
+.hook-pill{margin-top:8px;background:rgba(170,255,0,0.14);border:2px solid rgba(170,255,0,0.6);padding:16px 44px;font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:7px;color:#AAFF00}
+.hook-stage{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:6px;color:rgba(255,255,255,0.55)}
+
+/* ── STAKES ── */
+.sec-stakes{flex-direction:column;align-items:center;justify-content:center;gap:36px;text-align:center;padding:0 90px}
+.stakes-eyebrow{font-size:26px;letter-spacing:8px;color:#AAFF00;font-weight:700;text-transform:uppercase}
+.stakes-stage{font-family:'Bebas Neue',sans-serif;font-size:150px;line-height:0.95;color:#fff}
+.stakes-venue{font-family:'Bebas Neue',sans-serif;font-size:46px;letter-spacing:5px;color:rgba(255,255,255,0.6)}
+.stakes-rule{width:140px;height:4px;background:#AAFF00;border-radius:2px}
+
+/* ── SPINE: the signature ── */
+.sec-spine{flex-direction:column;align-items:center;justify-content:center;gap:60px}
+.spine-score{display:flex;align-items:baseline;gap:36px;font-family:'Bebas Neue',sans-serif;line-height:0.85}
+.spine-num{font-size:340px;color:#AAFF00;text-shadow:0 0 60px rgba(170,255,0,0.25)}
+.spine-dash{font-size:180px;color:rgba(255,255,255,0.22)}
+.spine-codes{display:flex;gap:340px;font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:5px;color:rgba(255,255,255,0.75)}
+.spine-track-wrap{width:880px;position:relative;height:120px;margin-top:20px}
+.spine-track{position:absolute;top:50%;left:0;right:0;height:6px;background:rgba(170,255,0,0.25);border-radius:3px;transform:translateY(-50%)}
+.spine-track-lit{position:absolute;top:50%;left:0;height:6px;background:#AAFF00;border-radius:3px;transform:translateY(-50%);box-shadow:0 0 18px rgba(170,255,0,0.5);width:{{SPINE_PROGRESS_W}}%}
+.sp-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#AAFF00;box-shadow:0 0 14px rgba(170,255,0,0.6)}
+.sp-dot.dim{background:rgba(170,255,0,0.35);box-shadow:none;width:16px;height:16px}
+.sp-dot.active{width:34px;height:34px;border:5px solid rgba(170,255,0,0.35);background:#AAFF00;box-shadow:0 0 28px rgba(170,255,0,0.9)}
+.sp-dot .m{position:absolute;top:-52px;left:50%;transform:translateX(-50%);font-family:'Bebas Neue',sans-serif;font-size:32px;color:#AAFF00;letter-spacing:2px;white-space:nowrap}
+.sp-ht{position:absolute;top:50%;transform:translate(-50%,-50%);width:3px;height:34px;background:rgba(255,255,255,0.4)}
+.sp-ht .hl{position:absolute;bottom:-44px;left:50%;transform:translateX(-50%);font-family:'Bebas Neue',sans-serif;font-size:26px;color:rgba(255,255,255,0.45);letter-spacing:2px}
+.spine-chip{display:flex;align-items:center;gap:26px;margin-top:26px;min-height:130px}
+.chip-photo{width:120px;height:120px;border-radius:50%;object-fit:cover;border:5px solid #AAFF00;box-shadow:0 6px 22px rgba(0,0,0,0.6)}
+.chip-fallback{width:120px;height:120px;border-radius:50%;border:5px solid rgba(170,255,0,0.5);background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:48px;color:rgba(255,255,255,0.75)}
+.chip-txt{text-align:left}
+.chip-name{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:2px;color:#fff;line-height:1}
+.chip-meta{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:4px;color:#AAFF00;margin-top:8px}
+.spine-label{font-size:24px;letter-spacing:8px;color:rgba(255,255,255,0.5);font-weight:700;text-transform:uppercase}
+
+/* ── STAT: the duel ── */
+.sec-stat{flex-direction:column;align-items:center;justify-content:center;gap:56px;padding:0 80px}
+.stat-eyebrow{font-size:26px;letter-spacing:8px;color:#AAFF00;font-weight:700;text-transform:uppercase}
+.stat-label{font-family:'Bebas Neue',sans-serif;font-size:92px;letter-spacing:6px;color:#fff;text-align:center;line-height:1}
+.stat-vals{display:flex;align-items:center;gap:80px}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:210px;line-height:0.9}
+.stat-val.home{color:#AAFF00;text-shadow:0 0 50px rgba(170,255,0,0.25)}
+.stat-val.away{color:rgba(255,255,255,0.42)}
+.stat-bars{width:840px}
+.stat-bar-row{display:flex;gap:10px;height:18px;border-radius:9px;overflow:hidden}
+.stat-bar-home{background:#AAFF00;width:{{STAT_HOME_W}}%;box-shadow:0 0 20px rgba(170,255,0,0.4)}
+.stat-bar-away{background:rgba(255,255,255,0.22);width:{{STAT_AWAY_W}}%}
+.stat-codes{display:flex;justify-content:space-between;margin-top:18px;font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:4px}
+.stat-codes .h{color:#AAFF00}.stat-codes .a{color:rgba(255,255,255,0.55)}
+
+/* ── STAR ── */
+.sec-star{flex-direction:column;align-items:center;justify-content:center;gap:40px}
+.star-eyebrow{font-size:28px;letter-spacing:9px;color:#AAFF00;font-weight:700;text-transform:uppercase}
+.star-photo{width:420px;height:420px;border-radius:50%;object-fit:cover;object-position:top center;border:8px solid #AAFF00;box-shadow:0 0 80px rgba(170,255,0,0.3),0 24px 60px rgba(0,0,0,0.7)}
+.star-crest{width:380px;height:380px;object-fit:contain;filter:drop-shadow(0 0 60px rgba(170,255,0,0.25))}
+.star-name{font-family:'Bebas Neue',sans-serif;font-size:110px;letter-spacing:3px;color:#fff;line-height:1;text-align:center;padding:0 60px}
+.star-rating{font-family:'Bebas Neue',sans-serif;font-size:96px;color:#AAFF00}
+.star-advance{font-family:'Bebas Neue',sans-serif;font-size:72px;letter-spacing:10px;color:#AAFF00}
+.mode-star .no-photo .star-photo,.mode-star .no-photo .star-rating{display:none}
+.mode-star .has-photo .star-crest,.mode-star .has-photo .star-advance{display:none}
+
+/* ── VERDICT ── */
+.sec-verdict{flex-direction:column;align-items:center;justify-content:center;gap:52px;padding:0 90px;text-align:center}
+.verdict-eyebrow{font-size:28px;letter-spacing:9px;color:#AAFF00;font-weight:700}
+.verdict-kicker{font-family:'Bebas Neue',sans-serif;font-size:118px;line-height:1.02;color:#fff}
+.verdict-kicker .volt{color:#AAFF00}
+.verdict-score{font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:4px;color:rgba(255,255,255,0.6)}
+.verdict-handles{display:flex;justify-content:center;gap:26px;margin-top:12px}
+.vh{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:3px;color:rgba(170,255,0,0.75)}
+.vh-dot{font-size:18px;color:rgba(170,255,0,0.4)}
+</style>
+</head>
+<body>
+<div id="reel-frame" class="mode-{{SCENE_MODE}}">
+
+  <div class="home-zone"></div>
+  <div class="away-zone"></div>
+  <div class="darken"></div>
+
+  <div class="topbar"><div class="brand">THIRD RAIL SPORTS</div><div class="badge">{{LEAGUE_BADGE}}</div></div>
+
+  <div class="sec sec-hook">
+    <div class="hook-stage">{{STAGE_LINE}}</div>
+    <div class="hook-crests">
+      <img class="hook-crest" src="{{HOME_CREST}}">
+      <div class="hook-vs">VS</div>
+      <img class="hook-crest" src="{{AWAY_CREST}}">
+    </div>
+    <div class="hook-codes"><div class="hook-code">{{HOME_CODE}}</div><div class="hook-code">{{AWAY_CODE}}</div></div>
+    <div class="hook-pill">{{HOOK_PILL}}</div>
+  </div>
+
+  <div class="sec sec-stakes">
+    <div class="stakes-eyebrow">{{STAKES_EYEBROW}}</div>
+    <div class="stakes-stage">{{STAKES_TITLE}}</div>
+    <div class="stakes-rule"></div>
+    <div class="stakes-venue">{{STAKES_SUB}}</div>
+  </div>
+
+  <div class="sec sec-spine">
+    <div class="spine-label">{{SPINE_LABEL}}</div>
+    <div class="spine-score"><span class="spine-num">{{SPINE_HOME}}</span><span class="spine-dash">–</span><span class="spine-num">{{SPINE_AWAY}}</span></div>
+    <div class="spine-codes"><span>{{HOME_CODE}}</span><span>{{AWAY_CODE}}</span></div>
+    <div class="spine-track-wrap">
+      <div class="spine-track"></div>
+      <div class="spine-track-lit"></div>
+      {{SPINE_DOTS_HTML}}
+      {{SPINE_HT_HTML}}
+    </div>
+    <div class="spine-chip">{{SPINE_CHIP_HTML}}</div>
+  </div>
+
+  <div class="sec sec-stat">
+    <div class="stat-eyebrow">{{STAT_EYEBROW}}</div>
+    <div class="stat-label">{{STAT_LABEL}}</div>
+    <div class="stat-vals"><div class="stat-val home">{{STAT_HOME}}</div><div class="stat-val away">{{STAT_AWAY}}</div></div>
+    <div class="stat-bars">
+      <div class="stat-bar-row"><div class="stat-bar-home"></div><div class="stat-bar-away"></div></div>
+      <div class="stat-codes"><span class="h">{{HOME_CODE}}</span><span class="a">{{AWAY_CODE}}</span></div>
+    </div>
+  </div>
+
+  <div class="sec sec-star">
+    <div class="{{STAR_MODE}}" style="display:flex;flex-direction:column;align-items:center;gap:40px">
+      <div class="star-eyebrow">{{STAR_EYEBROW}}</div>
+      {{STAR_PHOTO_HTML}}
+      <img class="star-crest" src="{{STAR_CREST}}">
+      <div class="star-name">{{STAR_NAME}}</div>
+      <div class="star-rating">{{STAR_RATING}}</div>
+      <div class="star-advance">{{STAR_ADVANCE}}</div>
+    </div>
+  </div>
+
+  <div class="sec sec-verdict">
+    <div class="verdict-eyebrow">TRS VERDICT</div>
+    <div class="verdict-kicker">{{KICKER_HTML}}</div>
+    <div class="verdict-score">{{VERDICT_SCORELINE}}</div>
+    <div class="verdict-handles">
+      <span class="vh">FB</span><span class="vh-dot">·</span><span class="vh">IG</span><span class="vh-dot">·</span>
+      <span class="vh">YT</span><span class="vh-dot">·</span><span class="vh">THREADS</span><span class="vh-dot">·</span>
+      <span class="vh">TIKTOK</span><span class="vh-dot">·</span><span class="vh">X</span>
+    </div>
+  </div>
+
+  <div class="botbar"><div class="decoded">SPORT. DECODED.</div></div>
+
+  <svg class="grain" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+    <filter id="gf"><feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch"/></filter>
+    <rect width="100%" height="100%" filter="url(#gf)"/>
+  </svg>
+
+</div>
+</body>
+</html>
