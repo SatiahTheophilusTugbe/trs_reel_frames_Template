@@ -1,15 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <!--
-TRS REEL FRAME TEMPLATE v1 — "THE MOMENT IN MOTION" (Jul 11)
-Repo: trs_reel_frames. Fetched with cb=Date.now() — auto cache-bust, no version bookkeeping.
-1080×1920. ONE template, SIX scene modes — body class .mode-<SCENE_MODE> shows exactly one
-section per render. The Build Reel Frames node injects ALL placeholders on every frame
-(empty string when N/A) and renders each frame via HCTI; Shotstack stitches frames to video.
-Modes: hook | stakes | spine | stat | star | verdict
-Spine frames: SPINE_DOTS_HTML positions dots by minute%% (code-computed), SPINE_CHIP_HTML is
-the active goal's scorer chip, HT tick position code-computed. Running score per state.
-Star fallback: STAR_MODE class 'no-photo' switches face → winner crest + ADVANCE line.
+TRS REEL FRAME TEMPLATE v2 — "THE MOMENT IN MOTION" (Jul 11, design rebuild)
+Repo: trs_reel_frames. cb=Date.now() auto cache-bust.
+
+REBUILD vs v1 — root causes fixed, verified against real family source (not memory):
+1. BLAND/UNDERUSED IMAGES: v1 had zero photography outside small chips. Fixed:
+   - STAKES scene now full-bleed stadium photo ({{VENUE_IMAGE}}, confirmed real API-Football
+     field) instead of empty color background.
+   - New SETUP scene: pitch formation graphic built from lineup grid data — player chips,
+     coach photos, formation strings. Genuinely new content type, not a reskin.
+   - Topbar's league badge is now the REAL competition logo image ({{LEAGUE_LOGO}}), not text.
+2. DEVIATED FROM FAMILY DESIGN: v1's color zones were 0.32/0.24 opacity + heavy darken —
+   diluted twice. Checked Match Flash's ACTUAL deployed CSS: zones run FULL opacity, clipped
+   diagonal, with the darken gradient doing the legibility work (light in the content band,
+   heavy at the edges) — not the color itself. Rebuilt to match exactly.
+   Topbar rebuilt to Score Card's real 3-zone pattern (eyebrow-left / absolute-centered
+   eyebrow-center / eyebrow-right) instead of v1's flat 2-item bar.
+3. NOT PREMIUM / DEAD SPACE: added ghost watermark numerals (Dossier's real pattern,
+   0.04-0.05 opacity oversized Bebas Neue) behind Spine/Stat scenes for texture and to fill
+   the vertical space that was previously empty black.
+
+Modes: hook | stakes | setup | spine | stat | star | verdict
+Setup: SETUP_HOME_CHIPS_HTML / SETUP_AWAY_CHIPS_HTML are pre-positioned absolute chips
+(grid math computed in Build Reel Data — this template just receives placed HTML).
 Render: viewport 1080×1920, ms_delay 400.
 -->
 <head>
@@ -20,42 +34,68 @@ Render: viewport 1080×1920, ms_delay 400.
 body{background:#0a0a0a;margin:0}
 #reel-frame{width:1080px;height:1920px;position:relative;overflow:hidden;background:#0a0a0a;font-family:'Inter',sans-serif}
 
-/* ── Team-color atmosphere (family language) ── */
-.home-zone{position:absolute;inset:0;background:{{HOME_COLOR}};opacity:0.32;clip-path:polygon(0 0,100% 0,40% 100%,0 100%)}
-.away-zone{position:absolute;inset:0;background:{{AWAY_COLOR}};opacity:0.24;clip-path:polygon(100% 0,100% 100%,40% 100%)}
-.darken{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.70) 0%,rgba(0,0,0,0.42) 40%,rgba(0,0,0,0.48) 60%,rgba(0,0,0,0.82) 100%)}
-.grain{position:absolute;inset:0;z-index:50;pointer-events:none;opacity:0.4;mix-blend-mode:overlay}
+.home-zone{position:absolute;inset:0;background:{{HOME_COLOR}};clip-path:polygon(0 0,100% 0,52% 100%,0 100%)}
+.away-zone{position:absolute;inset:0;background:{{AWAY_COLOR}};clip-path:polygon(100% 0,100% 100%,52% 100%)}
+.darken{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.62) 0%,rgba(0,0,0,0.20) 22%,rgba(0,0,0,0.16) 55%,rgba(0,0,0,0.30) 78%,rgba(0,0,0,0.80) 100%)}
+.grain{position:absolute;inset:0;z-index:50;pointer-events:none;opacity:0.5;mix-blend-mode:overlay}
 
-/* ── Chrome ── */
-.topbar{position:absolute;top:70px;left:64px;right:64px;z-index:20;display:flex;justify-content:space-between;align-items:center}
-.brand{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:8px;color:#AAFF00}
-.badge{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:5px;color:rgba(255,255,255,0.4)}
-.botbar{position:absolute;bottom:80px;left:0;right:0;z-index:20;text-align:center}
-.decoded{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:9px;color:rgba(170,255,0,0.8)}
+.stadium-layer{display:none;position:absolute;inset:0;z-index:1}
+.stadium-bg{position:absolute;inset:0;background-size:cover;background-position:center;background-image:url('{{VENUE_IMAGE}}');filter:saturate(0.85)}
+.stadium-fade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,10,0.55) 0%,rgba(10,10,10,0.35) 30%,rgba(10,10,10,0.55) 60%,rgba(10,10,10,0.92) 100%)}
+.mode-stakes .home-zone,.mode-stakes .away-zone,.mode-stakes .darken{display:none}
+.mode-stakes .stadium-layer{display:block}
 
-/* ── Sections: hidden unless mode matches ── */
+.ghost-num{position:absolute;font-family:'Bebas Neue',sans-serif;font-size:640px;line-height:0.85;color:#AAFF00;opacity:0.045;letter-spacing:-24px;pointer-events:none;user-select:none;top:50%;left:50%;transform:translate(-50%,-46%);white-space:nowrap;z-index:1}
+
+.topbar{position:absolute;top:64px;left:64px;right:64px;z-index:20;display:flex;justify-content:space-between;align-items:center}
+.brand{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:7px;color:#AAFF00}
+.league-logo{height:56px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.6))}
+.botbar{position:absolute;bottom:76px;left:0;right:0;z-index:20;text-align:center}
+.decoded{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:9px;color:rgba(170,255,0,0.8)}
+
 .sec{display:none;position:absolute;inset:0;z-index:10}
-.mode-hook .sec-hook,.mode-stakes .sec-stakes,.mode-spine .sec-spine,
+.mode-hook .sec-hook,.mode-stakes .sec-stakes,.mode-setup .sec-setup,.mode-spine .sec-spine,
 .mode-stat .sec-stat,.mode-star .sec-star,.mode-verdict .sec-verdict{display:flex}
 
-/* ── HOOK: crest duel ── */
-.sec-hook{flex-direction:column;align-items:center;justify-content:center;gap:44px}
-.hook-crests{display:flex;align-items:center;gap:70px}
-.hook-crest{width:300px;height:300px;object-fit:contain;filter:drop-shadow(0 14px 40px rgba(0,0,0,0.7))}
-.hook-vs{font-family:'Bebas Neue',sans-serif;font-size:110px;color:#AAFF00;line-height:1}
-.hook-codes{display:flex;align-items:center;gap:210px}
-.hook-code{font-family:'Bebas Neue',sans-serif;font-size:88px;letter-spacing:6px;color:#fff}
-.hook-pill{margin-top:8px;background:rgba(170,255,0,0.14);border:2px solid rgba(170,255,0,0.6);padding:16px 44px;font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:7px;color:#AAFF00}
-.hook-stage{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:6px;color:rgba(255,255,255,0.55)}
+.sec-hook{flex-direction:column;align-items:center;justify-content:center;gap:48px}
+.hook-stage{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:6px;color:rgba(255,255,255,0.6)}
+.hook-crests{display:flex;align-items:center;gap:76px}
+.hook-crest{width:320px;height:320px;object-fit:contain;filter:drop-shadow(0 16px 44px rgba(0,0,0,0.75))}
+.hook-vs{font-family:'Bebas Neue',sans-serif;font-size:118px;color:#AAFF00;line-height:1;text-shadow:0 0 40px rgba(170,255,0,0.3)}
+.hook-codes{display:flex;align-items:center;gap:220px}
+.hook-code{font-family:'Bebas Neue',sans-serif;font-size:92px;letter-spacing:6px;color:#fff}
+.hook-pill{margin-top:10px;background:rgba(170,255,0,0.16);border:2px solid rgba(170,255,0,0.65);padding:18px 46px;font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:7px;color:#AAFF00}
 
-/* ── STAKES ── */
-.sec-stakes{flex-direction:column;align-items:center;justify-content:center;gap:36px;text-align:center;padding:0 90px}
-.stakes-eyebrow{font-size:26px;letter-spacing:8px;color:#AAFF00;font-weight:700;text-transform:uppercase}
-.stakes-stage{font-family:'Bebas Neue',sans-serif;font-size:150px;line-height:0.95;color:#fff}
-.stakes-venue{font-family:'Bebas Neue',sans-serif;font-size:46px;letter-spacing:5px;color:rgba(255,255,255,0.6)}
-.stakes-rule{width:140px;height:4px;background:#AAFF00;border-radius:2px}
+.sec-stakes{flex-direction:column;align-items:center;justify-content:center;gap:38px;text-align:center;padding:0 90px}
+.stakes-eyebrow{font-size:27px;letter-spacing:8px;color:#AAFF00;font-weight:700;text-transform:uppercase;text-shadow:0 2px 10px rgba(0,0,0,0.7)}
+.stakes-stage{font-family:'Bebas Neue',sans-serif;font-size:150px;line-height:0.95;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,0.7)}
+.stakes-venue{font-family:'Bebas Neue',sans-serif;font-size:46px;letter-spacing:5px;color:rgba(255,255,255,0.75);text-shadow:0 2px 10px rgba(0,0,0,0.7)}
+.stakes-rule{width:140px;height:4px;background:#AAFF00;border-radius:2px;box-shadow:0 0 16px rgba(170,255,0,0.6)}
 
-/* ── SPINE: the signature ── */
+.sec-setup{flex-direction:column;align-items:center;justify-content:center;gap:0}
+.setup-eyebrow{font-size:26px;letter-spacing:8px;color:#AAFF00;font-weight:700;text-transform:uppercase;margin-bottom:22px}
+.setup-pitch{position:relative;width:900px;height:1180px;border:2px solid rgba(255,255,255,0.14);border-radius:12px;background:rgba(255,255,255,0.02)}
+.setup-halfline{position:absolute;top:50%;left:0;right:0;height:2px;background:rgba(255,255,255,0.14);transform:translateY(-50%)}
+.setup-centercircle{position:absolute;top:50%;left:50%;width:180px;height:180px;border:2px solid rgba(255,255,255,0.14);border-radius:50%;transform:translate(-50%,-50%)}
+.setup-chip{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:96px}
+.setup-photo{width:64px;height:64px;border-radius:50%;object-fit:cover;box-shadow:0 4px 14px rgba(0,0,0,0.6)}
+.setup-fallback{width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:26px;color:#fff}
+.setup-chip.home .setup-photo,.setup-chip.home .setup-fallback{border:3px solid {{HOME_COLOR}}}
+.setup-chip.away .setup-photo,.setup-chip.away .setup-fallback{border:3px solid {{AWAY_COLOR}}}
+.setup-name{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:1px;color:#fff;text-align:center;line-height:1.05;text-shadow:0 2px 6px rgba(0,0,0,0.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px}
+.setup-footer{display:flex;justify-content:space-between;width:900px;margin-top:26px}
+.setup-side{display:flex;flex-direction:column;align-items:center;gap:10px;width:280px}
+.setup-side.away{align-items:flex-start}
+.setup-side.home{align-items:flex-end}
+.setup-formation{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:3px}
+.setup-side.home .setup-formation{color:{{HOME_COLOR}}}
+.setup-side.away .setup-formation{color:{{AWAY_COLOR}}}
+.setup-coach-row{display:flex;align-items:center;gap:14px}
+.setup-side.home .setup-coach-row{flex-direction:row-reverse}
+.setup-coach-photo{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.3)}
+.setup-coach-fallback{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:20px;color:rgba(255,255,255,0.6)}
+.setup-coach-name{font-size:18px;color:rgba(255,255,255,0.65);letter-spacing:1px}
+
 .sec-spine{flex-direction:column;align-items:center;justify-content:center;gap:60px}
 .spine-score{display:flex;align-items:baseline;gap:36px;font-family:'Bebas Neue',sans-serif;line-height:0.85}
 .spine-num{font-size:340px;color:#AAFF00;text-shadow:0 0 60px rgba(170,255,0,0.25)}
@@ -76,11 +116,10 @@ body{background:#0a0a0a;margin:0}
 .chip-txt{text-align:left}
 .chip-name{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:2px;color:#fff;line-height:1}
 .chip-meta{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:4px;color:#AAFF00;margin-top:8px}
-.spine-label{font-size:24px;letter-spacing:8px;color:rgba(255,255,255,0.5);font-weight:700;text-transform:uppercase}
+.spine-label{font-size:24px;letter-spacing:8px;color:rgba(255,255,255,0.5);font-weight:700;text-transform:uppercase;position:relative;z-index:2}
 
-/* ── STAT: the duel ── */
 .sec-stat{flex-direction:column;align-items:center;justify-content:center;gap:56px;padding:0 80px}
-.stat-eyebrow{font-size:26px;letter-spacing:8px;color:#AAFF00;font-weight:700;text-transform:uppercase}
+.stat-eyebrow{font-size:26px;letter-spacing:8px;color:#AAFF00;font-weight:700;text-transform:uppercase;position:relative;z-index:2}
 .stat-label{font-family:'Bebas Neue',sans-serif;font-size:92px;letter-spacing:6px;color:#fff;text-align:center;line-height:1}
 .stat-vals{display:flex;align-items:center;gap:80px}
 .stat-val{font-family:'Bebas Neue',sans-serif;font-size:210px;line-height:0.9}
@@ -93,7 +132,6 @@ body{background:#0a0a0a;margin:0}
 .stat-codes{display:flex;justify-content:space-between;margin-top:18px;font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:4px}
 .stat-codes .h{color:#AAFF00}.stat-codes .a{color:rgba(255,255,255,0.55)}
 
-/* ── STAR ── */
 .sec-star{flex-direction:column;align-items:center;justify-content:center;gap:40px}
 .star-eyebrow{font-size:28px;letter-spacing:9px;color:#AAFF00;font-weight:700;text-transform:uppercase}
 .star-photo{width:420px;height:420px;border-radius:50%;object-fit:cover;object-position:top center;border:8px solid #AAFF00;box-shadow:0 0 80px rgba(170,255,0,0.3),0 24px 60px rgba(0,0,0,0.7)}
@@ -104,7 +142,6 @@ body{background:#0a0a0a;margin:0}
 .mode-star .no-photo .star-photo,.mode-star .no-photo .star-rating{display:none}
 .mode-star .has-photo .star-crest,.mode-star .has-photo .star-advance{display:none}
 
-/* ── VERDICT ── */
 .sec-verdict{flex-direction:column;align-items:center;justify-content:center;gap:52px;padding:0 90px;text-align:center}
 .verdict-eyebrow{font-size:28px;letter-spacing:9px;color:#AAFF00;font-weight:700}
 .verdict-kicker{font-family:'Bebas Neue',sans-serif;font-size:118px;line-height:1.02;color:#fff}
@@ -122,7 +159,14 @@ body{background:#0a0a0a;margin:0}
   <div class="away-zone"></div>
   <div class="darken"></div>
 
-  <div class="topbar"><div class="brand">THIRD RAIL SPORTS</div><div class="badge">{{LEAGUE_BADGE}}</div></div>
+  <div class="stadium-layer">
+    <div class="stadium-bg"></div>
+    <div class="stadium-fade"></div>
+  </div>
+
+  <div class="ghost-num">{{GHOST_TEXT}}</div>
+
+  <div class="topbar"><div class="brand">THIRD RAIL SPORTS</div><img class="league-logo" src="{{LEAGUE_LOGO}}"></div>
 
   <div class="sec sec-hook">
     <div class="hook-stage">{{STAGE_LINE}}</div>
@@ -140,6 +184,26 @@ body{background:#0a0a0a;margin:0}
     <div class="stakes-stage">{{STAKES_TITLE}}</div>
     <div class="stakes-rule"></div>
     <div class="stakes-venue">{{STAKES_SUB}}</div>
+  </div>
+
+  <div class="sec sec-setup">
+    <div class="setup-eyebrow">THE SETUP</div>
+    <div class="setup-pitch">
+      <div class="setup-halfline"></div>
+      <div class="setup-centercircle"></div>
+      {{SETUP_AWAY_CHIPS_HTML}}
+      {{SETUP_HOME_CHIPS_HTML}}
+    </div>
+    <div class="setup-footer">
+      <div class="setup-side away">
+        <div class="setup-formation">{{SETUP_AWAY_FORMATION}}</div>
+        <div class="setup-coach-row">{{SETUP_AWAY_COACH_HTML}}<div class="setup-coach-name">{{SETUP_AWAY_COACH_NAME}}</div></div>
+      </div>
+      <div class="setup-side home">
+        <div class="setup-formation">{{SETUP_HOME_FORMATION}}</div>
+        <div class="setup-coach-row">{{SETUP_HOME_COACH_HTML}}<div class="setup-coach-name">{{SETUP_HOME_COACH_NAME}}</div></div>
+      </div>
+    </div>
   </div>
 
   <div class="sec sec-spine">
